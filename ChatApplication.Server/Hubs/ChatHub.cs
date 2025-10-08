@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using ChatApplication.Server.Data.Context;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using Ganss.Xss;
 
 namespace ChatApplication.Server.Hubs;
 
-public class ChatHub : Hub
+[Authorize]
+public class ChatHub(ApplicationDbContext dbContext) : Hub
 {
-    public async Task SendMessage(string user, string message)
-    {
-        await Clients.All.SendAsync("ReceiveMessage", user, message);
-    }
+    private readonly ApplicationDbContext _dbContext = dbContext;
+
 }

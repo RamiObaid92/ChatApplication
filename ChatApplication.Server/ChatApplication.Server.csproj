@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="HtmlSanitizer" Version="9.0.886" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0-rc.1.25451.107" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0-rc.1.25451.107" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0-rc.1.25451.107" />
@@ -18,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Minimal Api\" />
+    <Folder Include="Endpoints\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>
 
