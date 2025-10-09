@@ -14,5 +14,20 @@ public static class AuthEndpoints
         {
 
         });
+
+        group.MapPost("/login", async (LoginRequest request, SignInManager<ApplicationUserEntity> signInManager) =>
+        {
+
+        });
+
+        group.MapGet("/google-login", (HttpContext context) =>
+        {
+
+        });
+
+        group.MapGet("/google-callback", (HttpContext context) =>
+        {
+
+        });
     }
 }
