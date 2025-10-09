@@ -4,12 +4,15 @@ using ChatApplication.Server.Encryption;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+// TODO: Register Endpoints
+// TODO: Register Hubs
+// TODO: Optimize Authentication and add Authorization
 
 builder.Services.AddOpenApi();
 builder.Services.AddSignalR();

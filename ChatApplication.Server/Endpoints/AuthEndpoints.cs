@@ -10,16 +10,6 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/api/auth");
 
-        group.MapPost("/register", async (RegisterRequest request, UserManager<ApplicationUserEntity> userManager) =>
-        {
-
-        });
-
-        group.MapPost("/login", async (LoginRequest request, SignInManager<ApplicationUserEntity> signInManager) =>
-        {
-
-        });
-
         group.MapGet("/google-login", (HttpContext context) =>
         {
 
