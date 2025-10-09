@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="ChatApplication.Server/ChatApplication.Server.csproj" />
+  <Project Path="ChatApplication.Tests/ChatApplication.Tests.csproj" Id="4905a5fe-ded8-43d8-8c32-a221358ee7b8" />
 </Solution>
