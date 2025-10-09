@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChatApplication.Server.Data.Context;
 
-public class ApplicationDbContext(DbContextOptions options) : IdentityDbContext<ApplicationUser>(options)
+public class ApplicationDbContext(DbContextOptions options) : IdentityDbContext<ApplicationUserEntity>(options)
 {
-    public DbSet<ChatMessage> Messages { get; set; }
-    public DbSet<ChatRoom> ChatRooms { get; set; }
+    public DbSet<ChatMessageEntity> Messages { get; set; }
+    public DbSet<ChatRoomEntity> ChatRooms { get; set; }
 }
