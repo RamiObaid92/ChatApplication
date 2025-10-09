@@ -1,6 +1,7 @@
 using ChatApplication.Server.Data.Context;
 using ChatApplication.Server.Data.Entities;
 using ChatApplication.Server.Encryption;
+using ChatApplication.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,27 +19,41 @@ builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
 builder.Services.AddDbContext<ApplicationDbContext>(x => x.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddIdentity<ApplicationUserEntity, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = false,
-        ValidateAudience = false,
+        ValidateIssuer = true,
+        ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("JwtKey") ?? throw new KeyNotFoundException("JwtKey missing")))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new KeyNotFoundException("JwtKey missing")))
     };
-}).AddGoogle(options =>
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/chatHub")))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+})
+.AddCookie("External")
+.AddGoogle(options =>
 {
-    options.ClientId = builder.Configuration.GetValue<string>("Authentication:Google:ClientId") ?? throw new KeyNotFoundException("GoogleClientId missing");
-    options.ClientSecret = builder.Configuration.GetValue<string>("Authentication:Google:ClientSecret") ?? throw new KeyNotFoundException("GoogleClientSecret missing");
+    options.SignInScheme = "External";
+    options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? throw new KeyNotFoundException("GoogleClientId missing");
+    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? throw new KeyNotFoundException("GoogleClientSecret missing");
 });
+
 
 var app = builder.Build();
 

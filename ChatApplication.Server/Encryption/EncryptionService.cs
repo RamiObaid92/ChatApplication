@@ -11,7 +11,7 @@ public class EncryptionService : IEncryptionService
     public EncryptionService(IConfiguration configuration, ILogger<EncryptionService> logger)
     {
         _logger = logger;
-        var aesKey = configuration["AesKey"];
+        var aesKey = configuration["Aes:Key"];
 
         if (string.IsNullOrEmpty(aesKey) || aesKey.Length != 32)
         {
