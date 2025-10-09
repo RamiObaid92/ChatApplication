@@ -1,6 +1,8 @@
 using ChatApplication.Server.Data.Context;
 using ChatApplication.Server.Data.Entities;
 using ChatApplication.Server.Encryption;
+using ChatApplication.Server.Endpoints;
+using ChatApplication.Server.Hubs;
 using ChatApplication.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -11,12 +13,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// TODO: Register Endpoints
-// TODO: Register Hubs
-// TODO: Optimize Authentication and add Authorization
-
 builder.Services.AddOpenApi();
-builder.Services.AddSignalR();
 builder.Services.AddDbContext<ApplicationDbContext>(x => x.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddIdentity<ApplicationUserEntity, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -26,8 +23,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
+        ValidateIssuer = false,
+        ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new KeyNotFoundException("JwtKey missing")))
@@ -46,22 +43,35 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         }
     };
 })
-.AddCookie("External")
 .AddGoogle(options =>
 {
-    options.SignInScheme = "External";
+    options.SignInScheme = IdentityConstants.ExternalScheme;
     options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? throw new KeyNotFoundException("GoogleClientId missing");
     options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? throw new KeyNotFoundException("GoogleClientSecret missing");
+});
+builder.Services.AddSignalR();
+builder.Services.AddAuthorization();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactApp", policy =>
+    {
+        policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithOrigins("http://localhost:5173");
+    });
 });
 
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
 app.UseHttpsRedirection();
+app.UseDefaultFiles();
+app.UseStaticFiles();
+app.UseRouting();
+app.UseCors("ReactApp");
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapAuthEndpoints();
+app.MapRoomEndpoints();
+app.MapHub<ChatHub>("/chatHub");
 
 app.Run();

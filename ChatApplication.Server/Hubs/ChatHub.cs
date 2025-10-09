@@ -26,10 +26,11 @@ public class ChatHub(ApplicationDbContext dbContext, ILogger<ChatHub> logger, IE
             throw new HubException("Access denied: You are not a member of this private room.");
         }
 
+        var displayName = GetUserDisplayName();
+
         await Groups.AddToGroupAsync(Context.ConnectionId, RoomGroup(roomId));
         _logger.LogInformation("User {UserId} joined room {RoomId}", userId, roomId);
 
-        var displayName = GetUserDisplayName();
         await Clients.Group(RoomGroup(roomId)).SendAsync("UserJoined", new
         {
             UserId = userId,
@@ -61,9 +62,10 @@ public class ChatHub(ApplicationDbContext dbContext, ILogger<ChatHub> logger, IE
             _logger.LogWarning("Unauthorized user {UserId} attempted to send a message to room {RoomId}", userId, roomId);
             throw new HubException("Access denied to this room.");
         }
-
+        var displayName = RequireDisplayName();
         var sanitizedMessage = SanitizeAndValidateMessage(message);
         var encryptedMessage = _encryption.Encrypt(sanitizedMessage);
+
         var messageEntity = new ChatMessageEntity
         {
             Content = encryptedMessage,
@@ -77,7 +79,6 @@ public class ChatHub(ApplicationDbContext dbContext, ILogger<ChatHub> logger, IE
 
         _logger.LogInformation("Message {MessageId} sent to room {RoomId} by user {UserId}", messageEntity.Id, roomId, userId);
 
-        var displayName = GetUserDisplayName();
         await Clients.Group(RoomGroup(roomId)).SendAsync("ReceiveMessage", new
         {
             messageEntity.Id,
@@ -104,6 +105,16 @@ public class ChatHub(ApplicationDbContext dbContext, ILogger<ChatHub> logger, IE
             throw new HubException("Message is too long (max 2000 characters)");
 
         return _sanitizer.Sanitize(message);
+    }
+
+    private string RequireDisplayName()
+    {
+        var name = GetUserDisplayName();
+        if (string.IsNullOrWhiteSpace(name) || name.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new HubException("Display name is required");
+        }
+        return name;
     }
 
     private string GetUserId()

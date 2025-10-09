@@ -37,13 +37,17 @@ public class TokenService : ITokenService
     {
         var credentials = new SigningCredentials(_securityKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Name, user.UserName ?? user.Id),
-            new Claim("displayName", user.DisplayName ?? user.UserName ?? user.Id),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(JwtRegisteredClaimNames.Name, user.UserName ?? user.Id),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        if (!string.IsNullOrWhiteSpace(user.DisplayName))
+        {
+            claims.Add(new("displayName", user.DisplayName));
+        }
 
         var token = new JwtSecurityToken(
             issuer: _issuer,
