@@ -4,6 +4,7 @@ using ChatApplication.Server.Encryption;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -15,7 +16,12 @@ builder.Services.AddSignalR();
 builder.Services.AddDbContext<ApplicationDbContext>(x => x.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddIdentity<ApplicationUserEntity, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -25,6 +31,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("JwtKey") ?? throw new KeyNotFoundException("JwtKey missing")))
     };
+}).AddGoogle(options =>
+{
+    options.ClientId = builder.Configuration.GetValue<string>("Authentication:Google:ClientId") ?? throw new KeyNotFoundException("GoogleClientId missing");
+    options.ClientSecret = builder.Configuration.GetValue<string>("Authentication:Google:ClientSecret") ?? throw new KeyNotFoundException("GoogleClientSecret missing");
 });
 
 var app = builder.Build();
