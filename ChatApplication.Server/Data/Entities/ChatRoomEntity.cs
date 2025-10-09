@@ -8,6 +8,7 @@ public class ChatRoomEntity
     public int Id { get; set; }
     [Required]
     public string Name { get; set; } = string.Empty;
+    public bool IsPrivate { get; set; } = false;
     public ICollection<ChatMessageEntity> Messages { get; set; } = [];
     public ICollection<ApplicationUserEntity> Members { get; set; } = [];
 }
