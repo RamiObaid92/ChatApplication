@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ChatApplication.Server.Data.Entities;
 
-public class ChatMessage
+public class ChatMessageEntity
 {
     [Key]
     public int Id { get; set; }
@@ -13,9 +13,9 @@ public class ChatMessage
     public string UserId { get; set; } = string.Empty;
 
     [ForeignKey(nameof(UserId))]
-    public ApplicationUser? User { get; set; }
+    public ApplicationUserEntity? User { get; set; }
     public int ChatRoomId { get; set; }
 
     [ForeignKey(nameof(ChatRoomId))]
-    public ChatRoom? ChatRoom { get; set; }
+    public ChatRoomEntity? ChatRoom { get; set; }
 }

@@ -2,12 +2,12 @@
 
 namespace ChatApplication.Server.Data.Entities;
 
-public class ChatRoom
+public class ChatRoomEntity
 {
     [Key]
     public int Id { get; set; }
     [Required]
     public string Name { get; set; } = string.Empty;
-    public ICollection<ChatMessage> Messages { get; set; } = [];
-    public ICollection<ApplicationUser> Members { get; set; } = [];
+    public ICollection<ChatMessageEntity> Messages { get; set; } = [];
+    public ICollection<ApplicationUserEntity> Members { get; set; } = [];
 }
