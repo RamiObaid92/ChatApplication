@@ -12,6 +12,17 @@ using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
+if (builder.Environment.IsDevelopment())
+{
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(5247);
+        options.ListenAnyIP(7277, listenOptions =>
+        {
+            listenOptions.UseHttps();
+        });
+    });
+}
 
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<ApplicationDbContext>(x => x.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -42,12 +53,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             return Task.CompletedTask;
         }
     };
-})
-.AddGoogle(options =>
-{
-    options.SignInScheme = IdentityConstants.ExternalScheme;
-    options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? throw new KeyNotFoundException("GoogleClientId missing");
-    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? throw new KeyNotFoundException("GoogleClientSecret missing");
 });
 builder.Services.AddSignalR();
 builder.Services.AddAuthorization();
@@ -66,9 +71,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseHttpsRedirection();
-
-app.UseDefaultFiles();
-app.UseStaticFiles();
 
 app.UseRouting();
 app.UseCors("ReactApp");

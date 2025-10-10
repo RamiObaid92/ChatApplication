@@ -1,11 +1,11 @@
 ﻿using ChatApplication.Server.Data.Entities;
 using ChatApplication.Server.Services;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
-using System.Security.Claims;
 
 namespace ChatApplication.Server.Endpoints;
+
+public record RegisterRequest(string Username, string Password);
+public record LoginRequest(string Username, string Password);
 
 public static class AuthEndpoints
 {
@@ -13,75 +13,31 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/api/auth");
 
-        group.MapGet("/google-login", () =>
+        group.MapPost("/register", async (RegisterRequest request, UserManager<ApplicationUserEntity> userManager) =>
         {
-            return Results.Challenge(new AuthenticationProperties
+            var user = new ApplicationUserEntity { UserName = request.Username, Email = request.Username };
+
+            var result = await userManager.CreateAsync(user, request.Password);
+
+            if (!result.Succeeded)
             {
-                RedirectUri = "/api/auth/google-callback"
-            },
-            authenticationSchemes: ["Google"]);
+                return Results.BadRequest(result.Errors);
+            }
+
+            return Results.Ok(new { Message = "User registered successfully" });
         });
 
-        group.MapGet("/google-callback", async (HttpContext context, SignInManager<ApplicationUserEntity> signInManager, UserManager<ApplicationUserEntity> userManager, ITokenService tokenService) =>
+        group.MapPost("/login", async (LoginRequest request, UserManager<ApplicationUserEntity> userManager, ITokenService tokenService) =>
         {
-            var authenticateResult = await context.AuthenticateAsync("Identity.External");
-            if (!authenticateResult.Succeeded)
+            var user = await userManager.FindByNameAsync(request.Username);
+
+            if (user == null || !await userManager.CheckPasswordAsync(user, request.Password))
             {
                 return Results.Unauthorized();
             }
 
-            var providerKey = authenticateResult.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
-            var email = authenticateResult.Principal?.FindFirstValue(ClaimTypes.Email);
-            var name = authenticateResult.Principal?.FindFirstValue(ClaimTypes.Name);
-
-            if (providerKey == null || email == null)
-            {
-                return Results.BadRequest("Error loading external login information.");
-            }
-            var signInResult = await signInManager.ExternalLoginSignInAsync("Google", providerKey, isPersistent: false);
-
-            ApplicationUserEntity? user;
-
-            if (signInResult.Succeeded)
-            {
-                user = await userManager.FindByLoginAsync("Google", providerKey);
-            }
-            else
-            {
-                user = await userManager.FindByEmailAsync(email);
-
-                if (user == null)
-                {
-                    user = new ApplicationUserEntity
-                    {
-                        UserName = email,
-                        Email = email,
-                        DisplayName = name
-                    };
-
-                    var createResult = await userManager.CreateAsync(user);
-
-                    if (!createResult.Succeeded)
-                    {
-                        return Results.BadRequest(createResult.Errors);
-                    }
-                }
-
-                var addLoginResult = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", providerKey, "Google"));
-
-                if (!addLoginResult.Succeeded)
-                {
-                    return Results.BadRequest(addLoginResult.Errors);
-                }
-            }
-
-            if (user == null)
-            {
-                return Results.BadRequest("Error loading user information.");
-            }
-
             var jwt = tokenService.GenerateJwtToken(user);
-            return Results.Redirect($"https://your-frontend-app.com/login-callback?token={jwt}");
+            return Results.Ok(new { Token = jwt });
         });
     }
 }
