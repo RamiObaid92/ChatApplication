@@ -30,6 +30,7 @@ namespace ChatApplication.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
+                    DisplayName = table.Column<string>(type: "TEXT", nullable: true),
                     UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
@@ -56,7 +57,8 @@ namespace ChatApplication.Server.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false)
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    IsPrivate = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -170,7 +172,7 @@ namespace ChatApplication.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ApplicationUserChatRoom",
+                name: "ApplicationUserEntityChatRoomEntity",
                 columns: table => new
                 {
                     ChatRoomsId = table.Column<int>(type: "INTEGER", nullable: false),
@@ -178,15 +180,15 @@ namespace ChatApplication.Server.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ApplicationUserChatRoom", x => new { x.ChatRoomsId, x.MembersId });
+                    table.PrimaryKey("PK_ApplicationUserEntityChatRoomEntity", x => new { x.ChatRoomsId, x.MembersId });
                     table.ForeignKey(
-                        name: "FK_ApplicationUserChatRoom_AspNetUsers_MembersId",
+                        name: "FK_ApplicationUserEntityChatRoomEntity_AspNetUsers_MembersId",
                         column: x => x.MembersId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ApplicationUserChatRoom_ChatRooms_ChatRoomsId",
+                        name: "FK_ApplicationUserEntityChatRoomEntity_ChatRooms_ChatRoomsId",
                         column: x => x.ChatRoomsId,
                         principalTable: "ChatRooms",
                         principalColumn: "Id",
@@ -222,8 +224,8 @@ namespace ChatApplication.Server.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ApplicationUserChatRoom_MembersId",
-                table: "ApplicationUserChatRoom",
+                name: "IX_ApplicationUserEntityChatRoomEntity_MembersId",
+                table: "ApplicationUserEntityChatRoomEntity",
                 column: "MembersId");
 
             migrationBuilder.CreateIndex(
@@ -278,7 +280,7 @@ namespace ChatApplication.Server.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ApplicationUserChatRoom");
+                name: "ApplicationUserEntityChatRoomEntity");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");

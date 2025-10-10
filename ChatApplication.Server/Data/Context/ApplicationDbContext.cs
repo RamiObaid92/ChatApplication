@@ -1,10 +1,11 @@
 ﻿using ChatApplication.Server.Data.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChatApplication.Server.Data.Context;
 
-public class ApplicationDbContext(DbContextOptions options) : IdentityDbContext<ApplicationUserEntity>(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUserEntity>(options)
 {
     public DbSet<ChatMessageEntity> Messages { get; set; }
     public DbSet<ChatRoomEntity> ChatRooms { get; set; }

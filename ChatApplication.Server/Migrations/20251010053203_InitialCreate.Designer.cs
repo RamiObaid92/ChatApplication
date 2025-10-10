@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ChatApplication.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251009121525_AddDisplayName")]
-    partial class AddDisplayName
+    [Migration("20251010053203_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -135,6 +135,9 @@ namespace ChatApplication.Server.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPrivate")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")

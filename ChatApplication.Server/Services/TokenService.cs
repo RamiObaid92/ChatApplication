@@ -14,21 +14,20 @@ public class TokenService : ITokenService
 
     public TokenService(IConfiguration config)
     {
-        var key = config["Jwt:Key"];
+        // Vi tar bort ALLA referenser till den gamla nyckeln från config.
+        // Vi använder BARA vår testnyckel.
+        var hardcodedKey = "ThisIsMySuperSecretKeyForTesting123!";
+        _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(hardcodedKey));
+
+        // Dessa kan vi fortfarande läsa från config, de är inte problemet.
         var issuer = config["Jwt:Issuer"];
         var audience = config["Jwt:Audience"];
-
-        if (string.IsNullOrEmpty(key))
-        {
-            throw new InvalidOperationException("JWT Key is not configured.");
-        }
 
         if (string.IsNullOrEmpty(issuer) || string.IsNullOrEmpty(audience))
         {
             throw new InvalidOperationException("JWT Issuer or Audience is not configured.");
         }
 
-        _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         _issuer = issuer;
         _audience = audience;
     }
@@ -41,13 +40,9 @@ public class TokenService : ITokenService
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Name, user.UserName ?? user.Id),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new("displayName", user.DisplayName ?? "")
         };
-
-        if (!string.IsNullOrWhiteSpace(user.DisplayName))
-        {
-            claims.Add(new("displayName", user.DisplayName));
-        }
 
         var token = new JwtSecurityToken(
             issuer: _issuer,

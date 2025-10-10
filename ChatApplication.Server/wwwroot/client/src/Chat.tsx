@@ -1,134 +1,109 @@
 import { useState, useEffect, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 import DOMPurify from "dompurify";
-import { ToastContainer } from "react-toastify";
-import { jwtDecode } from "jwt-decode";
 
+// Defines the structure for a message.
 interface Message {
   user: string;
-  text: string;
-}
-
-interface DecodedToken {
-  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name": string;
+  content: string;
 }
 
 const Chat: React.FC = () => {
-  const [connection, setConnection] = useState<signalR.HubConnection | null>(
-    null
-  );
+  const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [user, setUser] = useState<string>("");
-  const [message, setMessage] = useState<string>("");
+  
+  const [username, setUsername] = useState<string>("");
+  const [newMessage, setNewMessage] = useState<string>("");
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Sets up the SignalR connection.
   useEffect(() => {
-    const start = async () => {
-      const token = sessionStorage.getItem("jwt");
-      if (!token) return;
-      if (connection) await connection.stop();
+    const newConnection = new signalR.HubConnectionBuilder()
+      .withUrl("https://localhost:7277/chathub")
+      .withAutomaticReconnect()
+      .build();
 
-      const decoded = jwtDecode<DecodedToken>(token);
-      const username =
-        decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"];
-      setUser(username);
+    setConnection(newConnection);
+  }, []);
 
-      const conn = new signalR.HubConnectionBuilder()
-        .withUrl("/chathub", {
-          accessTokenFactory: () => token,
-        })
-        .withAutomaticReconnect()
-        .build();
-
-      conn
-        .start()
-        .then(() => console.log("Connected to hub"))
-        .catch((err) => console.error("SignalR error:", err));
-
-      conn.on("ReceiveMessage", (u: string, msg: string) => {
-        const safeUser = DOMPurify.sanitize(u);
-        const safeMsg = DOMPurify.sanitize(msg);
-        setMessages((prev) => [...prev, { user: safeUser, text: safeMsg }]);
+  // Starts and stops the SignalR connection.
+  useEffect(() => {
+    if (connection) {
+      connection.start()
+        .then(() => console.log("SignalR Connected."))
+        .catch(err => console.error("Connection failed: ", err));
+      
+      // Listens for new messages from the server.
+      connection.on("ReceiveMessage", (user: string, message: string) => {
+        const safeUser = DOMPurify.sanitize(user);
+        const safeContent = DOMPurify.sanitize(message);
+        setMessages(prev => [...prev, { user: safeUser, content: safeContent }]);
       });
 
-      setConnection(conn);
       return () => {
-        conn.stop();
+        connection.stop();
       };
-    };
-    start();
+    }
   }, [connection]);
 
+  // Scrolls to the bottom of the chat window when a new message is added.
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (connection && message && user) {
+  // Sends a message to the server.
+  const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (connection && username.trim() && newMessage.trim()) {
       try {
-        await connection.invoke("SendMessage", message);
-        setMessage("");
+        await connection.invoke("SendMessage", username, newMessage);
+        setNewMessage("");
       } catch (err) {
-        console.error("Send error:", err);
+        console.error("Send message error:", err);
       }
     }
   };
+  
+  const canChat = username.trim().length > 0;
 
   return (
     <div className="p-6 max-w-lg mx-auto mt-10">
       <div className="h-96 overflow-y-scroll border rounded-lg p-4 bg-primary">
-        {messages && messages.length <= 0 && (
-          <small className="text-gray-400">Inga meddelanden ännu 😞</small>
-        )}
-        {messages.length > 0 &&
-          messages.map((m, i) => (
-            <div
-              key={i}
-              className={`chat ${m.user === user ? "chat-end" : "chat-start"}`}
-            >
-              <div className="chat-header">{m.user}</div>
-              <div
-                className={`chat-bubble ${
-                  m.user === user ? "bg-gray-700" : ""
-                }`}
-              >
-                {m.text}
-              </div>
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            className={`chat ${msg.user === username ? "chat-end" : "chat-start"}`}
+          >
+            <div className="chat-header">{msg.user}</div>
+            <div className={`chat-bubble ${msg.user === username ? "bg-gray-700" : ""}`}>
+              {msg.content}
             </div>
-          ))}
+          </div>
+        ))}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="mt-4 flex gap-2">
+      <form onSubmit={sendMessage} className="mt-4 flex gap-2">
         <input
           type="text"
-          placeholder="Name"
-          value={user}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setUser(e.target.value)
-          }
+          placeholder="Ditt namn..."
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           className="input input-bordered w-1/3"
-          disabled
         />
         <input
           type="text"
-          placeholder="Message"
-          value={message}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setMessage(e.target.value)
-          }
-          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === "Enter") sendMessage();
-          }}
+          placeholder={canChat ? "Skriv ett meddelande..." : "Ange ett namn för att chatta"}
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
           className="input input-bordered flex-1"
+          disabled={!canChat}
         />
-        <button className="btn btn-primary" onClick={sendMessage}>
-          Send
+        <button type="submit" className="btn btn-primary" disabled={!canChat}>
+          Skicka
         </button>
-      </div>
-      <ToastContainer />
+      </form>
     </div>
   );
 };
