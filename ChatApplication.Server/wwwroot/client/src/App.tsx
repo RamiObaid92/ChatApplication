@@ -1,35 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import Login from "./Login";
+import Chat from "./Chat";
 
-function App() {
-  const [count, setCount] = useState(0)
+const App: React.FC = () => {
+  const [jwt, setJwt] = useState<string | null>(() =>
+    sessionStorage.getItem("jwt")
+  );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (token) {
+      sessionStorage.setItem("jwt", token);
+      setJwt(token);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("jwt");
+    setJwt(null);
+  };
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+      <nav className="bg-primary text-white h-12 flex items-center justify-between px-4">
+        {jwt && (
+          <button
+            onClick={handleLogout}
+            className="bg-white text-primary px-2 py-1 rounded text-sm cursor-pointer"
+          >
+            Logout
+          </button>
+        )}
+      </nav>
 
-export default App
+      {jwt ? <Chat /> : <Login />}
+    </>
+  );
+};
+export default App;
